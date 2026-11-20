@@ -78,7 +78,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     try {
       setIsLoading(true)
       setError('')
-      const response = await fetch(`${API_URL}/api/character/random?difficulty=${difficulty}`)
+      const response = await fetch(`${API_URL}api/character/random?difficulty=${difficulty}`)
 
       if (!response.ok) {
         throw new Error('The character could not be loaded.')
@@ -140,7 +140,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     const searchCharacters = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5002/api/character/search?query=${encodeURIComponent(answer)}`,
+          `${API_URL}api/character/search?query=${encodeURIComponent(answer)}`,
           { signal: controller.signal },
         )
 
@@ -181,7 +181,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     const userId = storedUserId ? Number(storedUserId) : null
 
     try {
-      const response = await fetch('http://localhost:5002/api/game/save', {
+      const response = await fetch(`${API_URL}api/game/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,7 +237,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     }
 
     const response = await fetch(
-      `${API_URL}/api/game/character-answer`,
+      `${API_URL}api/game/character-answer`,
       {
         method: 'POST',
         headers: {

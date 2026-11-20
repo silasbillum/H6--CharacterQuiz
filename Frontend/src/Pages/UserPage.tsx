@@ -55,7 +55,7 @@ function UserPage({ onBack, onNavigate }: UserPageProps) {
     const loadProfile = async () => {
       try {
         const response = await fetch(
-             `${API_URL}/api/profile/${storedUserId}`,
+             `${API_URL}api/profile/${storedUserId}`,
         )
 
         if (!response.ok) {

@@ -35,7 +35,7 @@ type Lobby = {
   players: LobbyPlayer[]
 }
 
-const API_URL = '${API_URL}/api/lobby'
+const API_URL = '${API_URL}api/lobby'
 
 function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
   // This page owns the lobby connection until the host starts the match. The
@@ -102,7 +102,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch(`${API_URL}/${normalizedCode}/join`, {
+      const response = await fetch(`${API_URL}${normalizedCode}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerName, userId }),
@@ -122,7 +122,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
 
     const intervalId = window.setInterval(async () => {
       try {
-        const response = await fetch(`${API_URL}/${lobby.code}`)
+        const response = await fetch(`${API_URL}${lobby.code}`)
         await updateLobby(response)
       } catch {
       }
@@ -138,7 +138,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
     if (!currentPlayer) return
 
     try {
-      const response = await fetch(`${API_URL}/${lobby.code}/players/${playerId}/ready`, {
+      const response = await fetch(`${API_URL}${lobby.code}/players/${playerId}/ready`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isReady: !currentPlayer.isReady }),
@@ -156,7 +156,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
     setError('')
     try {
       // The server checks the host again; the browser button is not trusted.
-      const response = await fetch(`${API_URL}/${lobby.code}/start`, {
+      const response = await fetch(`${API_URL}${lobby.code}/start`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId }),

@@ -26,7 +26,7 @@ function SoloLeaderboard({
     const loadLeaderboard = async () => {
       try {
         const response = await fetch(
-          `${API_URL}/api/leaderboard/solo`,
+          `${API_URL}api/leaderboard/solo`,
         )
 
         if (!response.ok) {
