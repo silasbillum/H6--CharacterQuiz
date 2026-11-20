@@ -156,7 +156,7 @@ if (!response.ok) {
     // Refresh scores and round state while the game is open.
     const intervalId = window.setInterval(async () => {
       try {
-        const response = await fetch(`${LOBBY_API_URL}/${lobbyCode}`)
+        const response = await fetch(`${LOBBY_API_URL}${lobbyCode}`)
         if (response.ok) {
           const nextLobby = (await response.json()) as MultiplayerLobby
           onLobbyUpdate(nextLobby)
