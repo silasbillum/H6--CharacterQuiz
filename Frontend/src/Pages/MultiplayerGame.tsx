@@ -111,7 +111,7 @@ useEffect(() => {
   
       console.log('Saving multiplayer game:', payload)
 
-const response = await fetch(`${API_URL}/api/game/save-multiplayer`, {
+const response = await fetch(`${API_URL}api/game/save-multiplayer`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ if (!response.ok) {
     const timeoutId = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `${LOBBY_API_URL}/api/character/search?query=${encodeURIComponent(answer)}`,
+          `${API_URL}/api/character/search?query=${encodeURIComponent(answer)}`,
           { signal: controller.signal },
         )
         if (response.ok) setSuggestions((await response.json()) as Character[])
