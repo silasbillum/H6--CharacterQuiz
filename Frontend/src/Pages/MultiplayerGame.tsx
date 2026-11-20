@@ -192,7 +192,7 @@ if (!response.ok) {
     const timeoutId = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `${API_URL}/api/character/search?query=${encodeURIComponent(answer)}`,
+          `${API_URL}api/character/search?query=${encodeURIComponent(answer)}`,
           { signal: controller.signal },
         )
         if (response.ok) setSuggestions((await response.json()) as Character[])
