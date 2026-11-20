@@ -217,7 +217,7 @@ if (!response.ok) {
   }
 
   try {
-    const response = await fetch(`${LOBBY_API_URL}${lobbyCode}/restart`, {
+    const response = await fetch(`${LOBBY_API_URL}/${lobbyCode}/restart`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId }),
