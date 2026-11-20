@@ -192,7 +192,7 @@ if (!response.ok) {
     const timeoutId = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `${LOBBY_API_URL}/api/character/search?query=${encodeURIComponent(answer)}`,
+          `${LOBBY_API_URL}api/character/search?query=${encodeURIComponent(answer)}`,
           { signal: controller.signal },
         )
         if (response.ok) setSuggestions((await response.json()) as Character[])
@@ -217,7 +217,7 @@ if (!response.ok) {
   }
 
   try {
-    const response = await fetch(`${LOBBY_API_URL}/${lobbyCode}/restart`, {
+    const response = await fetch(`${LOBBY_API_URL}${lobbyCode}/restart`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId }),
@@ -254,7 +254,7 @@ if (!response.ok) {
     setSuggestions([])
 
     try {
-      const response = await fetch(`${LOBBY_API_URL}/${lobbyCode}/players/${playerId}/answer`, {
+      const response = await fetch(`${LOBBY_API_URL}${lobbyCode}/players/${playerId}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer }),
