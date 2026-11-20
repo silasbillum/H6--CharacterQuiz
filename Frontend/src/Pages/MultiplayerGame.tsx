@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import Navbar from '../Components/Navbar'
+import { API_URL } from '../config'
 
 type MultiplayerGameProps = {
   lobbyCode: string
@@ -46,7 +47,7 @@ type Character = {
   suggestionType?: 'Character' | 'AnimeTitle'
 }
 
-const API_URL = '${API_URL}api/lobby'
+const LOBBY_API_URL = `${API_URL}/api/lobby`
 
 function MultiplayerGame({
   lobbyCode,
@@ -155,7 +156,7 @@ if (!response.ok) {
     // Refresh scores and round state while the game is open.
     const intervalId = window.setInterval(async () => {
       try {
-        const response = await fetch(`${API_URL}${lobbyCode}`)
+        const response = await fetch(`${LOBBY_API_URL}/${lobbyCode}`)
         if (response.ok) {
           const nextLobby = (await response.json()) as MultiplayerLobby
           onLobbyUpdate(nextLobby)

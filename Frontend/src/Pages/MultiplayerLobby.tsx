@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import MultiplayerGame from './MultiplayerGame'
 import Navbar from '../Components/Navbar'
+import { API_URL } from '../config'
 
 type MultiplayerLobbyProps = {
   onBack: () => void
@@ -35,7 +36,7 @@ type Lobby = {
   players: LobbyPlayer[]
 }
 
-const API_URL = '${API_URL}api/lobby'
+const LOBBY_API_URL = `${API_URL}/api/lobby`
 
 function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
   // This page owns the lobby connection until the host starts the match. The
@@ -76,7 +77,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(LOBBY_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerName, userId }),
@@ -102,7 +103,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch(`${API_URL}${normalizedCode}/join`, {
+      const response = await fetch(`${LOBBY_API_URL}/${normalizedCode}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerName, userId }),
@@ -122,7 +123,7 @@ function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
 
     const intervalId = window.setInterval(async () => {
       try {
-        const response = await fetch(`${API_URL}${lobby.code}`)
+        const response = await fetch(`${LOBBY_API_URL}/${lobby.code}`)
         await updateLobby(response)
       } catch {
       }
