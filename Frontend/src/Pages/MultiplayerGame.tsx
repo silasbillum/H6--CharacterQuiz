@@ -47,7 +47,7 @@ type Character = {
   suggestionType?: 'Character' | 'AnimeTitle'
 }
 
-const LOBBY_API_URL = `${API_URL}/api/lobby`
+const LOBBY_API_URL = `${API_URL}api/lobby`
 
 function MultiplayerGame({
   lobbyCode,
