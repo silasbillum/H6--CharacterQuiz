@@ -1,5 +1,6 @@
 import {useEffect, useState } from "react"
 import Navbar from "../Components/Navbar"
+import { API_URL } from '../config'
 
 type UserPageProps = {
     onBack: () => void
@@ -54,7 +55,7 @@ function UserPage({ onBack, onNavigate }: UserPageProps) {
     const loadProfile = async () => {
       try {
         const response = await fetch(
-             `http://localhost:5002/api/profile/${storedUserId}`,
+             `${API_URL}/api/profile/${storedUserId}`,
         )
 
         if (!response.ok) {

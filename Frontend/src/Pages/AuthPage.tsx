@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { API_URL } from '../config'
 
 type AuthPageProps = {
   mode: 'login' | 'register'
@@ -27,7 +28,7 @@ function AuthPage({ mode, onNavigate }: AuthPageProps) {
       // endpoints; encode both values so special characters remain intact.
       const endpoint = isLogin ? 'login' : 'register'
       const response = await fetch(
-        `http://localhost:5002/api/user/${endpoint}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+        `${API_URL}/api/user/${endpoint}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
         { method: 'POST' },
       )
 

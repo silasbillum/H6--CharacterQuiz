@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import Navbar from '../Components/Navbar'
+import { API_URL } from '../config'
 
 export type Difficulty = 'Easy' | 'Normal' | 'Hard'
 
@@ -77,7 +78,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     try {
       setIsLoading(true)
       setError('')
-      const response = await fetch(`http://localhost:5002/api/character/random?difficulty=${difficulty}`)
+      const response = await fetch(`${API_URL}/api/character/random?difficulty=${difficulty}`)
 
       if (!response.ok) {
         throw new Error('The character could not be loaded.')
@@ -236,7 +237,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     }
 
     const response = await fetch(
-      'http://localhost:5002/api/game/character-answer',
+      `${API_URL}/api/game/character-answer`,
       {
         method: 'POST',
         headers: {

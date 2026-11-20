@@ -35,7 +35,7 @@ type Lobby = {
   players: LobbyPlayer[]
 }
 
-const API_URL = 'http://localhost:5002/api/lobby'
+const API_URL = '${API_URL}/api/lobby'
 
 function MultiplayerLobby({ onBack, onNavigate }: MultiplayerLobbyProps) {
   // This page owns the lobby connection until the host starts the match. The

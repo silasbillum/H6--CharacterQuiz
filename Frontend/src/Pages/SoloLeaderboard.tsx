@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../Components/Navbar'
+import { API_URL } from '../config'
 
 type SoloLeaderboardProps = {
   onBack: () => void
@@ -25,7 +26,7 @@ function SoloLeaderboard({
     const loadLeaderboard = async () => {
       try {
         const response = await fetch(
-          'http://localhost:5002/api/leaderboard/solo',
+          `${API_URL}/api/leaderboard/solo`,
         )
 
         if (!response.ok) {
