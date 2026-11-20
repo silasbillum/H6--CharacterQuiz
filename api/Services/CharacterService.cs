@@ -1,90 +1,152 @@
 using System.Text.Json;
 
+namespace api.Services;
 
-namespace api.Services
+public sealed class CharacterService
 {
-    public class CharacterService
+    private readonly List<AniListTvExport> _shows;
+
+    public CharacterService()
     {
-        private readonly List<TmdbMovieExport> _movies;
-        private readonly List<TmdbTvExport> _tvShows;
+        var path = Path.Combine(
+            AppContext.BaseDirectory,
+            "Data",
+            "AniList_TV_List.json");
 
-        public CharacterService()
+        if (!File.Exists(path))
         {
-            // Build paths relative to the compiled API output directory.
-            var moviesPath = Path.Combine(
-                AppContext.BaseDirectory, "Data", "TMDB_List.json");
-
-            var tvShowsPath = Path.Combine(
-                AppContext.BaseDirectory, "Data", "TMDB_TV_List.json");
-
-            // Read both exported datasets once when the service is created.
-            var moviesJson = File.ReadAllText(moviesPath);
-            var tvShowsJson = File.ReadAllText(tvShowsPath);
-
-            // Convert the JSON text into objects used by the character service.
-            _movies = JsonSerializer.Deserialize<List<TmdbMovieExport>>(moviesJson)
-                ?? new List<TmdbMovieExport>();
-
-            _tvShows = JsonSerializer.Deserialize<List<TmdbTvExport>>(tvShowsJson)
-                ?? new List<TmdbTvExport>();
+            throw new FileNotFoundException("Character data was not found.", path);
         }
 
-        public List<Character> GetAllCharacters()
-        {
-            var characters = new List<Character>();
-            int characterId = 1;
+        _shows = JsonSerializer.Deserialize<List<AniListTvExport>>(
+            File.ReadAllText(path)) ?? [];
+    }
 
-            // Get characters from movies
-            foreach (var movie in _movies)
+    public List<Character> GetAllCharacters()
+    {
+        var characters = new List<Character>();
+
+        foreach (var show in _shows)
+        {
+            foreach (var character in show.characters.Where(character =>
+                !string.IsNullOrWhiteSpace(character.name)
+                && Uri.IsWellFormedUriString(character.imageUrl, UriKind.Absolute)))
             {
-                foreach (var characterName in movie.characters ?? new List<string>())
+                characters.Add(new Character
                 {
-                    characters.Add(new Character
-                    {
-                        Id = characterId++,
-                        CharacterName = characterName.Replace("(voice)", "").Trim(),
-                        ShowName = movie.title,
-                        ShowId = movie.id,
-                        ShowType = "Movie",
-                        ImageUrl = ""
-                    });
-                }
+                    Id = character.id,
+                    CharacterName = character.name,
+                    ShowName = show.title,
+                    ShowId = show.id,
+                    ShowType = "Anime",
+                    ImageUrl = character.imageUrl
+                });
             }
+        }
 
-            // Get characters from TV shows
-            foreach (var show in _tvShows)
+        return characters;
+    }
+
+    public Character? GetRandomCharacter()
+    {
+        var characters = GetAllCharacters();
+        return characters.Count == 0
+            ? null
+            : characters[Random.Shared.Next(characters.Count)];
+    }
+
+    public List<Character> SearchCharacters(string query)
+    {
+        var normalizedQuery = Normalize(query);
+        var matches = GetAllCharacters()
+            .Select(character => new
             {
-                foreach (var characterName in show.characters ?? new List<string>())
+                Character = character,
+                Score = GetMatchScore(normalizedQuery, character)
+            })
+            .Where(result => result.Score < int.MaxValue)
+            .OrderBy(result => result.Score)
+            .ToList();
+
+        var showSuggestions = matches
+            .GroupBy(result => result.Character.ShowName)
+            .Select(group => new
+            {
+                Character = new Character
                 {
-                    characters.Add(new Character
-                    {
-                        Id = characterId++,
-                        CharacterName = characterName.Replace("(voice)", "").Trim(),
-                        ShowName = show.name,
-                        ShowId = show.id,
-                        ShowType = "TV",
-                        ImageUrl = ""
-                    });
-                }
-            }
+                    CharacterName = group.Key,
+                    ShowName = group.Key,
+                    ShowType = "AnimeTitle",
+                    SuggestionType = "AnimeTitle"
+                },
+                Score = group.Min(result => result.Score)
+            });
 
-            return characters;
-        }
-        
-                public Character? GetRandomCharacter()
-        {
-            var characters = GetAllCharacters();
-
-            if (characters.Count == 0)
+        return showSuggestions
+            .Concat(matches.Select(result => new
             {
-                return null;
-            }
+                result.Character,
+                result.Score
+            }))
+            .OrderBy(result => result.Score)
+            .ThenBy(result => result.Character.SuggestionType == "Character" ? 1 : 0)
+            .Take(10)
+            .Select(result => result.Character)
+            .ToList();
+    }
 
-            Random random = new Random();
+    private static int GetMatchScore(string query, Character character)
+    {
+        var characterName = Normalize(character.CharacterName);
+        var showName = Normalize(character.ShowName);
 
-            int randomIndex = random.Next(characters.Count);
-
-            return characters[randomIndex];
+        if (characterName.Contains(query))
+        {
+            return query.Length == characterName.Length ? 0 : 1;
         }
+
+        if (showName.Contains(query))
+        {
+            return 2;
+        }
+
+        var distance = Math.Min(
+            LevenshteinDistance(query, characterName),
+            characterName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(token => LevenshteinDistance(query, token))
+                .DefaultIfEmpty(int.MaxValue)
+                .Min());
+
+        return distance <= Math.Max(2, query.Length / 3)
+            ? 3 + distance
+            : int.MaxValue;
+    }
+
+    private static string Normalize(string value) =>
+        new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+
+    private static int LevenshteinDistance(string first, string second)
+    {
+        var distances = Enumerable.Range(0, second.Length + 1).ToArray();
+
+        for (var index = 1; index <= first.Length; index++)
+        {
+            var previous = distances[0];
+            distances[0] = index;
+
+            for (var secondIndex = 1; secondIndex <= second.Length; secondIndex++)
+            {
+                var current = distances[secondIndex];
+                distances[secondIndex] = first[index - 1] == second[secondIndex - 1]
+                    ? previous
+                    : 1 + Math.Min(
+                        previous,
+                        Math.Min(distances[secondIndex], distances[secondIndex - 1]));
+                previous = current;
+            }
+        }
+
+        return distances[second.Length];
     }
 }
