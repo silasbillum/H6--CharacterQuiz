@@ -30,6 +30,7 @@ type MultiplayerPlayer = {
 }
 
 type MultiplayerLobby = {
+  roundRevealed: boolean
   code: string
   started: boolean
   gameOver: boolean
@@ -46,6 +47,8 @@ type Character = {
   imageUrl: string
   suggestionType?: 'Character' | 'AnimeTitle'
 }
+
+
 
 const LOBBY_API_URL = `${API_URL}api/lobby`
 
@@ -71,6 +74,7 @@ function MultiplayerGame({
   const [error, setError] = useState('')
   const [isGameOver, setIsGameOver] = useState(gameOver)
   const hasSavedGame = useRef(false)
+  const [roundRevealed, setRoundRevealed] = useState(false)
 
   useEffect(() => {
     setCharacter(currentQuestion)
@@ -264,7 +268,7 @@ if (!response.ok) {
       onLobbyUpdate(nextLobby)
       setCharacter(nextLobby.currentQuestion)
       setIsGameOver(nextLobby.gameOver)
-
+      setRoundRevealed(nextLobby.roundRevealed)
       setFeedback(
         nextLobby.gameOver
           ? 'Game over.'
@@ -278,8 +282,29 @@ if (!response.ok) {
     }
   }
 
-  const currentPlayer = players.find((player) => player.id === playerId)
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
+    const currentPlayer = players.find((player) => player.id === playerId)
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
+
+    const nextRound = async () => {
+    const response = await fetch(
+      `${LOBBY_API_URL}/${lobbyCode}/players/${playerId}/next`,
+      { method: 'POST' },
+    )
+
+    if (!response.ok) {
+      throw new Error('Could not continue.')
+    }
+
+    const nextLobby = (await response.json()) as MultiplayerLobby
+    onLobbyUpdate(nextLobby)
+    setCharacter(nextLobby.currentQuestion)
+    setRoundRevealed(nextLobby.roundRevealed)
+    setFeedback('')
+    setAnswer('')
+    setSuggestions([])
+    setIsGameOver(nextLobby.gameOver)
+    setSecondsLeft(30)
+  }
 
   return (
     <>
@@ -320,7 +345,7 @@ if (!response.ok) {
                 placeholder="Enter your answer..."
                 autoComplete="off"
               />
-              <button type="submit" disabled={!character || secondsLeft === 0}>Submit answer</button>
+              <button type="submit" disabled={!character || secondsLeft === 0 || roundRevealed}>Submit answer</button>
             </div>
             {suggestions.length > 0 && (
               <section className="answer-suggestions" aria-label="Character suggestions">
@@ -352,6 +377,20 @@ if (!response.ok) {
             {feedback && <p className="answer-feedback">{feedback}</p>}
             {error && <p className="answer-feedback incorrect-feedback">{error}</p>}
           </form>
+
+            {roundRevealed && character && (
+              <div className="character-reveal">
+                <strong>{character.characterName}</strong>
+                <span>{character.showName}</span>
+              </div>
+            )}
+
+            {roundRevealed && currentPlayer?.isHost && (
+            <button type="button" onClick={nextRound}>
+              Next character
+            </button>
+          )}
+
         </section>
 
         <aside className="scoreboard" aria-label="Player scores">

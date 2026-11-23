@@ -74,11 +74,12 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null)
   const [isGameOver, setIsGameOver] = useState(false)
   const hasSavedGame = useRef(false)
+  const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
     const fetchCharacter = useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
-      const response = await fetch(`${API_URL}api/character/random?difficulty=${difficulty}`)
+      const response = await fetch(`${API_URL}/api/character/random?difficulty=${difficulty}`)
 
       if (!response.ok) {
         throw new Error('The character could not be loaded.')
@@ -86,6 +87,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
 
       const nextCharacter = (await response.json()) as Character
       setCharacter(nextCharacter)
+      setIsAnswerRevealed(false)
       setQuestionStartedAt(Date.now())
       setSecondsLeft(Rounds_Seconds)
     } catch {
@@ -140,7 +142,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     const searchCharacters = async () => {
       try {
         const response = await fetch(
-          `${API_URL}api/character/search?query=${encodeURIComponent(answer)}`,
+          `${API_URL}/api/character/search?query=${encodeURIComponent(answer)}`,
           { signal: controller.signal },
         )
 
@@ -181,7 +183,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     const userId = storedUserId ? Number(storedUserId) : null
 
     try {
-      const response = await fetch(`${API_URL}api/game/save`, {
+      const response = await fetch(`${API_URL}/api/game/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,6 +228,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     setCorrectGuesses(0)
     setTotalGuesses(0)
     setGameStartedAt(Date.now())
+    setIsAnswerRevealed(false)
     hasSavedGame.current = false
 
     void fetchCharacter()
@@ -237,7 +240,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     }
 
     const response = await fetch(
-      `${API_URL}api/game/character-answer`,
+      `${API_URL}/api/game/character-answer`,
       {
         method: 'POST',
         headers: {
@@ -257,6 +260,15 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     }
   }
 
+  const nextCharacter = () => {
+      setAnswer('')
+      setSuggestions([])
+      setFeedback(null)
+      setPointsAwarded(null)
+      setIsAnswerRevealed(false)
+      void fetchCharacter()
+    }
+
   const submitAnswer = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -264,11 +276,13 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
       return
     }
 
+    
+
     const normalizeAnswer = (value: string) =>
       value.toLowerCase().replace(/[^a-z0-9]/g, '')
     const normalizedAnswer = normalizeAnswer(answer)
     const answerType =
-  normalizedAnswer === normalizeAnswer(character.characterName)
+    normalizedAnswer === normalizeAnswer(character.characterName)
     ? 'character'
     : normalizedAnswer === normalizeAnswer(character.showName)
       ? 'anime'
@@ -301,7 +315,11 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     setPointsAwarded(points)
     setFeedback('correct')
     setAnswer('')
+    setIsAnswerRevealed(true)
     await fetchCharacter()
+
+    
+
     }
 
   return (
@@ -344,6 +362,12 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
               ) : (
                 <span className="character-status">No character artwork found</span>
               )}
+              {isAnswerRevealed && character && (
+                <div className="character-reveal">
+                  <strong>{character.characterName}</strong>
+                  <span>{character.showName}</span>
+                </div>
+              )}
             {/*  <span className="mystery-label">{character?.showName}</span>*/}
             </>
           )}
@@ -360,11 +384,11 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
               setAnswer(event.target.value)
               setFeedback(null)
               }}
-              disabled={isGameOver}
+              disabled={isGameOver || isAnswerRevealed}
               placeholder="Enter character or anime name..."
               autoComplete="off"
             />
-            <button type="submit" disabled={isLoading || isGameOver}>
+            <button type="submit" disabled={isLoading || isGameOver || isAnswerRevealed}>
               Submit answer <span aria-hidden="true">→</span>
             </button>
           </div>
@@ -402,6 +426,17 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
             </section>
           )}
         </form>
+
+          {isAnswerRevealed && (
+            <button
+              type="button"
+              className="next-character-button"
+              onClick={nextCharacter}
+            >
+              Next Character
+            </button>
+          )}
+
       </section>
           {isGameOver && (
       <div className="game-over-overlay" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
@@ -428,6 +463,13 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
               <span>Final streak</span>
             </div>
           </div>
+          {character && (
+            <p>
+              Character: <strong>{character.characterName}</strong>
+              <br />
+              Anime: <strong>{character.showName}</strong>
+            </p>
+          )}
 
           <div className="game-over-actions">
             <button type="button" className="game-over-button retry-button" onClick={retryGame}>

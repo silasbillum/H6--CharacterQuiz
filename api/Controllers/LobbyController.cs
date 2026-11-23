@@ -81,6 +81,13 @@ public class LobbyController(LobbyService lobbyService) : ControllerBase
         return lobby is null ? NotFound("Lobby or player not found.") : Ok(lobby);
     }
 
+    [HttpPost("{code}/players/{playerId}/next")]
+    public ActionResult<LobbySnapshot> NextRound(string code, string playerId)
+    {
+        var lobby = lobbyService.NextRound(code, playerId);
+        return lobby is null ? NotFound("Lobby or player not found.") : Ok(lobby);
+    }
+
     public sealed record LobbyRequest(string PlayerName, int? UserId);
     public sealed record ReadyRequest(bool IsReady);
     public sealed record PlayerRequest(string PlayerId);

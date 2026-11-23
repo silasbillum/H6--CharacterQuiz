@@ -58,7 +58,6 @@ public sealed class LobbyService(CharacterService characterService)
 
         lock (lobby)
         {
-            AdvanceRound(lobby);
             return lobby.Snapshot();
         }
     }
@@ -164,9 +163,9 @@ public sealed class LobbyService(CharacterService characterService)
                 return lobby.Snapshot();
             }
 
-                        if (DateTimeOffset.UtcNow >= lobby.RoundEndsAt)
+            if (DateTimeOffset.UtcNow >= lobby.RoundEndsAt)
             {
-                AdvanceRound(lobby);
+                lobby.RoundRevealed = true;
                 return lobby.Snapshot();
             }
 
@@ -194,7 +193,7 @@ public sealed class LobbyService(CharacterService characterService)
             }
         }
 
-            AdvanceRound(lobby);
+            lobby.RoundRevealed = true;
             return lobby.Snapshot();
         }
     }
@@ -269,6 +268,7 @@ public sealed class LobbyService(CharacterService characterService)
         lobby.RoundHadCorrectAnswer = false;
         lobby.CurrentQuestion = characterService.GetRandomCharacter();
         lobby.RoundEndsAt = DateTimeOffset.UtcNow.AddSeconds(RoundSeconds);
+        lobby.RoundRevealed = false;
     }
 
     private static string Normalize(string value) =>
@@ -276,6 +276,41 @@ public sealed class LobbyService(CharacterService characterService)
 
     private static string CreateCode() =>
         Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+
+    public LobbySnapshot? NextRound(string code, string playerId)
+    {
+        var lobby = Find(code);
+
+        if (lobby is null)
+        {
+            return null;
+        }
+
+        lock (lobby)
+        {
+            var player = FindPlayer(lobby, playerId);
+
+            if (player is null ||
+                !player.IsHost ||
+                !lobby.Started ||
+                !lobby.RoundRevealed ||
+                lobby.GameOver)
+            {
+                return null;
+            }
+
+            if(!lobby.RoundHadCorrectAnswer)
+            {
+                lobby.GameOver = true;
+                lobby.RoundRevealed = false;
+                return lobby.Snapshot();
+            }
+
+            lobby.RoundRevealed = false;
+            StartRound(lobby);
+            return lobby.Snapshot();
+        }
+    }
 
     private sealed class Lobby(string code)
     {
@@ -288,11 +323,13 @@ public sealed class LobbyService(CharacterService characterService)
         public DateTimeOffset StartedAt { get; set; } 
         public bool GameOver { get; set; }
         public bool RoundHadCorrectAnswer { get; set; }
+        public bool RoundRevealed { get; set; }
 
         public LobbySnapshot Snapshot() => new(
             Code,
             Started,
             GameOver,
+            RoundRevealed,
             StartedAt,
             CurrentQuestion,
             RoundEndsAt,
@@ -335,6 +372,7 @@ public sealed record LobbySnapshot(
     string Code,
     bool Started,
     bool GameOver,
+    bool RoundRevealed,
     DateTimeOffset StartedAt,
     Character? CurrentQuestion,
     DateTimeOffset RoundEndsAt,

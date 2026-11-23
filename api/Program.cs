@@ -23,7 +23,9 @@ var frontendUrl =
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins(frontendUrl)
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "https://h6-character-quiz.vercel.app")
             .AllowAnyHeader()
             .AllowAnyMethod());
 });

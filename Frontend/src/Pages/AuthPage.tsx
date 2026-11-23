@@ -28,7 +28,7 @@ function AuthPage({ mode, onNavigate }: AuthPageProps) {
       // endpoints; encode both values so special characters remain intact.
       const endpoint = isLogin ? 'login' : 'register'
       const response = await fetch(
-        `${API_URL}api/user/${endpoint}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+        `${API_URL}/api/user/${endpoint}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
         { method: 'POST' },
       )
 
