@@ -16,7 +16,7 @@ type LobbyPlayer = {
   isReady: boolean
   score: number
   currentStreak: number
-  maxStreak: number
+  bestStreak: number
   correctGuesses: number
   totalGuesses: number
 }
