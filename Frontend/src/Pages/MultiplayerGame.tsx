@@ -24,7 +24,7 @@ type MultiplayerPlayer = {
   isReady: boolean
   score: number
   currentStreak: number
-  maxStreak: number
+  bestStreak: number
   correctGuesses: number
   totalGuesses: number
 }
@@ -76,6 +76,7 @@ function MultiplayerGame({
   const [isGameOver, setIsGameOver] = useState(gameOver)
   const hasSavedGame = useRef(false)
   const [roundRevealed, setRoundRevealed] = useState(false)
+  const answerInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setCharacter(currentQuestion)
@@ -84,6 +85,12 @@ function MultiplayerGame({
   useEffect(() => {
   setIsGameOver(gameOver)
 }, [gameOver])
+
+useEffect(() => {
+  if (character && !isGameOver && !roundRevealed) {
+    answerInputRef.current?.focus()
+  }
+}, [character, isGameOver, roundRevealed])
 
 useEffect(() => {
   const currentPlayer = players.find((player) => player.id === playerId)
@@ -107,7 +114,7 @@ useEffect(() => {
     userId: player.userId,
     points: player.score,
     streak: player.currentStreak,
-    maxStreak: player.maxStreak,
+    bestStreak: player.bestStreak,
     correctGuesses: player.correctGuesses,
     totalGuesses: player.totalGuesses,
     placement: index + 1,
@@ -167,6 +174,7 @@ if (!response.ok) {
           onLobbyUpdate(nextLobby)
           setCharacter(nextLobby.currentQuestion)
           setIsGameOver(nextLobby.gameOver)
+          setRoundRevealed(nextLobby.roundRevealed)
         }
       } catch {
       }
@@ -251,37 +259,60 @@ if (!response.ok) {
   }
 }
 
-  const submitAnswer = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!character || !answer.trim() || secondsLeft === 0) return
+  const submitAnswer = async (
+  event?: FormEvent<HTMLFormElement>,
+  selectedAnswer?: string,
+) => {
+  event?.preventDefault()
 
-    setAnswer('')
-    setSuggestions([])
+  const answerToCheck = selectedAnswer ?? answer
 
-    try {
-      const response = await fetch(`${LOBBY_API_URL}/${lobbyCode}/players/${playerId}/answer`, {
+  if (!character || !answerToCheck.trim() || secondsLeft === 0 || roundRevealed || isGameOver) {
+    return
+  }
+
+  setAnswer('')
+  setSuggestions([])
+
+  try {
+    const response = await fetch(
+      `${LOBBY_API_URL}/${lobbyCode}/players/${playerId}/answer`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer }),
-      })
-      if (!response.ok) throw new Error('Could not submit your answer.')
-      const nextLobby = (await response.json()) as MultiplayerLobby
-      onLobbyUpdate(nextLobby)
-      setCharacter(nextLobby.currentQuestion)
-      setIsGameOver(nextLobby.gameOver)
-      setRoundRevealed(nextLobby.roundRevealed)
-      setFeedback(
-        nextLobby.gameOver
-          ? 'Game over.'
-          : `Answer submitted. Waiting for ${Math.max(
-              0,
-              players.length - nextLobby.answeredPlayers,
-            )} player(s).`,
-      )
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Could not update your score.')
-    }
+        body: JSON.stringify({ answer: answerToCheck }),
+      },
+    )
+
+    if (!response.ok) throw new Error('Could not submit your answer.')
+
+    const nextLobby = (await response.json()) as MultiplayerLobby
+
+    onLobbyUpdate(nextLobby)
+    setCharacter(nextLobby.currentQuestion)
+    setIsGameOver(nextLobby.gameOver)
+    setRoundRevealed(nextLobby.roundRevealed)
+
+    const remainingPlayers = Math.max(
+      0,
+      nextLobby.players.length - nextLobby.answeredPlayers,
+    )
+
+    setFeedback(
+      nextLobby.gameOver
+        ? 'Game over.'
+        : nextLobby.roundRevealed
+          ? 'All players have answered.'
+          : `Answer submitted. Waiting for ${remainingPlayers} player(s).`,
+    )
+  } catch (requestError) {
+    setError(
+      requestError instanceof Error
+        ? requestError.message
+        : 'Could not update your score.',
+    )
   }
+}
 
     const currentPlayer = players.find((player) => player.id === playerId)
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
@@ -300,6 +331,7 @@ if (!response.ok) {
     onLobbyUpdate(nextLobby)
     setCharacter(nextLobby.currentQuestion)
     setRoundRevealed(nextLobby.roundRevealed)
+    setCharacter(nextLobby.currentQuestion)
     setFeedback('')
     setAnswer('')
     setSuggestions([])
@@ -340,6 +372,7 @@ if (!response.ok) {
             <label htmlFor="multiplayer-answer">Type a character or anime name</label>
             <div className="answer-bar">
               <input
+                ref={answerInputRef}
                 id="multiplayer-answer"
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
@@ -356,12 +389,16 @@ if (!response.ok) {
                     <li key={`${suggestion.characterName}-${suggestion.showName}`}>
                       <button
                         type="button"
-                        onClick={() => {
-                          setAnswer(suggestion.suggestionType === 'AnimeTitle'
+                       onClick={() => {
+                        const selectedAnswer =
+                          suggestion.suggestionType === 'AnimeTitle'
                             ? suggestion.showName
-                            : suggestion.characterName)
-                          setSuggestions([])
-                        }}
+                            : suggestion.characterName
+
+                        setAnswer(selectedAnswer)
+                        setSuggestions([])
+                        void submitAnswer(undefined, selectedAnswer)
+                      }}
                       >
                         <strong>
                           {suggestion.suggestionType === 'AnimeTitle'
@@ -379,19 +416,7 @@ if (!response.ok) {
             {error && <p className="answer-feedback incorrect-feedback">{error}</p>}
           </form>
 
-            {roundRevealed && character && (
-              <div className="character-reveal">
-                <strong>{character.characterName}</strong>
-                <span>{character.showName}</span>
-              </div>
-            )}
-
-            {roundRevealed && currentPlayer?.isHost && (
-            <button type="button" onClick={nextRound}>
-              Next character
-            </button>
-          )}
-
+            
         </section>
 
         <aside className="scoreboard" aria-label="Player scores">
@@ -407,7 +432,7 @@ if (!response.ok) {
                 <strong>{player.name}</strong>
                 {player.id === playerId && <small>You</small>}
                 <span className="player-streaks">
-                  Streak {player.currentStreak} · Best {player.maxStreak}
+                  Streak {player.currentStreak} · Best {player.bestStreak}
                 </span>
               </span>
                 <strong className="player-score">{player.score}</strong>
@@ -430,6 +455,14 @@ if (!response.ok) {
                 <p>
                   Everyone missed the round or time ran out. Here are your results:
                 </p>
+                <br />
+                {character && (
+                  <p>
+                    Character: <strong>{character.characterName}</strong>
+                    <br />
+                    Anime: <strong>{character.showName}</strong>
+                  </p>
+                )}
 
                 <div className="game-over-stats">
                   <div>
@@ -437,17 +470,14 @@ if (!response.ok) {
                     <span>Points</span>
                   </div>
                   <div>
-                    <strong>{currentPlayer?.maxStreak ?? 0}</strong>
+                    <strong>{currentPlayer?.bestStreak ?? 0}</strong>
                     <span>Best streak</span>
                   </div>
                   <div>
                     <strong>{currentPlayer?.correctGuesses ?? 0}</strong>
                     <span>Correct guesses</span>
                   </div>
-                  <div>
-                    <strong>{currentPlayer?.currentStreak ?? 0}</strong>
-                    <span>Final streak</span>
-                  </div>
+                  
                 </div>
 
                 <div className="game-over-actions">
@@ -473,7 +503,43 @@ if (!response.ok) {
                 </div>
               </section>
             </div>
+
           )}
+
+          {roundRevealed && !isGameOver && character && (
+          <div
+            className="game-over-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="answer-reveal-title"
+          >
+            <section className="game-over-card">
+              <p className="card-kicker">Answer</p>
+
+              <h2 id="answer-reveal-title">
+                {character.characterName}
+              </h2>
+
+              <p>
+                Anime: <strong>{character.showName}</strong>
+              </p>
+
+              {currentPlayer?.isHost ? (
+                <div className="game-over-actions">
+                  <button
+                    type="button"
+                    className="game-over-button retry-button"
+                    onClick={() => void nextRound()}
+                  >
+                    Next character
+                  </button>
+                </div>
+              ) : (
+                <p>Waiting for the host...</p>
+              )}
+            </section>
+          </div>
+        )}
 
       </main>
     </>

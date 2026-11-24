@@ -74,6 +74,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null)
   const [isGameOver, setIsGameOver] = useState(false)
   const hasSavedGame = useRef(false)
+  const answerInputRef = useRef<HTMLInputElement>(null)
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
     const fetchCharacter = useCallback(async () => {
     try {
@@ -90,12 +91,19 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
       setIsAnswerRevealed(false)
       setQuestionStartedAt(Date.now())
       setSecondsLeft(Rounds_Seconds)
+      
     } catch {
       setError('Could not load a character. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }, [difficulty])
+
+  useEffect(() => {
+  if (!isLoading && character && !isGameOver && !isAnswerRevealed) {
+    answerInputRef.current?.focus()
+  }
+}, [character, isLoading, isGameOver, isAnswerRevealed])
 
   useEffect(() => {
     void fetchCharacter()
@@ -167,10 +175,17 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     }
   }, [answer])
 
-  const selectSuggestion = (suggestion: Character) => {
-    setAnswer(suggestion.characterName)
-    setSuggestions([])
-  }
+    const selectSuggestion = async (suggestion: Character) => {
+      const selectedAnswer =
+        suggestion.suggestionType === 'AnimeTitle'
+          ? suggestion.showName
+          : suggestion.characterName
+
+      setAnswer(selectedAnswer)
+      setSuggestions([])
+
+      await submitAnswer(undefined, selectedAnswer)
+    }
 
   const saveGame = async (finalTotalGuesses = totalGuesses) => {
     if (hasSavedGame.current) {
@@ -269,18 +284,23 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
       void fetchCharacter()
     }
 
-  const submitAnswer = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+    const submitAnswer = async (
+    event?: FormEvent<HTMLFormElement>,
+    selectedAnswer?: string,
+    ) => {
+      event?.preventDefault()
 
-    if (!character || !answer.trim() || isLoading) {
-      return
-    }
+      const answerToCheck = selectedAnswer ?? answer
+
+      if (!character || !answerToCheck.trim() || isLoading || isGameOver || isAnswerRevealed) {
+        return
+      }
 
     
 
     const normalizeAnswer = (value: string) =>
       value.toLowerCase().replace(/[^a-z0-9]/g, '')
-    const normalizedAnswer = normalizeAnswer(answer)
+    const normalizedAnswer = normalizeAnswer(answerToCheck)
     const answerType =
     normalizedAnswer === normalizeAnswer(character.characterName)
     ? 'character'
@@ -333,7 +353,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
           <p className="eyebrow">Solo play <span aria-hidden="true">✦</span></p>
           <span className="score-pill">
           Time <strong>{secondsLeft}s</strong> · Score <strong>{score}</strong> · Streak{' '}
-          <strong>{streak}</strong> · Best <strong>{maxStreak}</strong>
+          <strong>{streak}</strong> · Best <strong>{streak}</strong>
         </span>
         </header>
 
@@ -377,6 +397,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
           <label htmlFor="character-answer">Type a character or anime name</label>
           <div className="answer-bar">
             <input
+              ref={answerInputRef}
               id="character-answer"
               type="text"
               value={answer}
@@ -455,13 +476,10 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
               <span>Points</span>
             </div>
             <div>
-              <strong>{maxStreak}</strong>
-              <span>Best streak</span>
-            </div>
-            <div>
               <strong>{streak}</strong>
-              <span>Final streak</span>
+              <span>streak</span>
             </div>
+            
           </div>
           {character && (
             <p>

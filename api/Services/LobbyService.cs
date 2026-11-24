@@ -58,6 +58,21 @@ public sealed class LobbyService(CharacterService characterService)
 
         lock (lobby)
         {
+            if (lobby.Started &&
+                lobby.CurrentQuestion is not null &&
+                !lobby.GameOver &&
+                DateTimeOffset.UtcNow >= lobby.RoundEndsAt)
+            {
+                if (!lobby.RoundHadCorrectAnswer)
+                {
+                    lobby.GameOver = true;
+                }
+                else
+                {
+                    lobby.RoundRevealed = true;
+                }
+            }
+
             return lobby.Snapshot();
         }
     }
@@ -165,7 +180,15 @@ public sealed class LobbyService(CharacterService characterService)
 
             if (DateTimeOffset.UtcNow >= lobby.RoundEndsAt)
             {
-                lobby.RoundRevealed = true;
+                if (!lobby.RoundHadCorrectAnswer)
+                {
+                    lobby.GameOver = true;
+                }
+                else
+                {
+                    lobby.RoundRevealed = true;
+                }
+
                 return lobby.Snapshot();
             }
 
@@ -193,7 +216,18 @@ public sealed class LobbyService(CharacterService characterService)
             }
         }
 
-            lobby.RoundRevealed = true;
+            if (lobby.AnsweredPlayers.Count >= lobby.Players.Count)
+            {
+                if (!lobby.RoundHadCorrectAnswer)
+                {
+                    lobby.GameOver = true;
+                }
+                else
+                {
+                    lobby.RoundRevealed = true;
+                }
+            }
+
             return lobby.Snapshot();
         }
     }
