@@ -143,7 +143,7 @@ public sealed class LobbyService(CharacterService characterService)
         {
             lobbyPlayer.Score = 0;
             lobbyPlayer.CurrentStreak = 0;
-            lobbyPlayer.MaxStreak = 0;
+            lobbyPlayer.BestStreak = 0;
             lobbyPlayer.CorrectGuesses = 0;
             lobbyPlayer.TotalGuesses = 0;
         }
@@ -205,7 +205,7 @@ public sealed class LobbyService(CharacterService characterService)
             else
             {
                 player.CurrentStreak++;
-                player.MaxStreak = Math.Max(player.MaxStreak, player.CurrentStreak);
+                player.BestStreak = Math.Max(player.BestStreak, player.CurrentStreak);
 
                 player.Score += CalculatePoints(
                     answerType.Value,
@@ -273,7 +273,7 @@ public sealed class LobbyService(CharacterService characterService)
 
     var streakMultiplier = Math.Min(
         100 + (currentStreak - 1) * StreakBonusPercent,
-        MaxStreakMultiplierPercent);
+        BestStreakMultiplierPercent);
 
     return (basePoints + speedBonus) * streakMultiplier / 100;
     }
@@ -376,7 +376,7 @@ public sealed class LobbyService(CharacterService characterService)
                 player.IsReady,
                 player.Score,
                 player.CurrentStreak,
-                player.MaxStreak,
+                player.BestStreak,
                 player.TotalGuesses,
                 player.CorrectGuesses)).ToList());
     }
@@ -390,7 +390,7 @@ public sealed class LobbyService(CharacterService characterService)
         public bool IsReady { get; set; }
         public int Score { get; set; }
         public int CurrentStreak { get; set; }
-        public int MaxStreak { get; set; }
+        public int BestStreak { get; set; }
         public int CorrectGuesses { get; set; }
         public int TotalGuesses { get; set; }
     }
@@ -421,6 +421,6 @@ public sealed record LobbyPlayerSnapshot(
     bool IsReady,
     int Score,
     int CurrentStreak,
-    int MaxStreak,
+    int BestStreak,
     int TotalGuesses,
     int CorrectGuesses);
