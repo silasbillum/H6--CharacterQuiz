@@ -66,7 +66,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
   const [correctGuesses, setCorrectGuesses] = useState(0)
   const [totalGuesses, setTotalGuesses] = useState(0)
   const [gameStartedAt, setGameStartedAt] = useState(Date.now())
-  const [maxStreak, setMaxStreak] = useState(0)
+  const [bestStreak, setBestStreak] = useState(0)
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now())
   const [secondsLeft, setSecondsLeft] = useState(Rounds_Seconds)
   const [gameOverReason, setGameOverReason] = useState<'wrong' | 'timeout' | null>(null)
@@ -209,7 +209,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
           difficulty,
           points: score,
           streak,
-          bestStreak: maxStreak,
+          bestStreak: bestStreak,
           correctGuesses,
           totalGuesses: finalTotalGuesses,
           startedAt: new Date(gameStartedAt).toISOString(),
@@ -233,7 +233,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
   const retryGame = () => {
     setStreak(0)
     setScore(0)
-    setMaxStreak(0)
+    setBestStreak(0)
     setPointsAwarded(null)
     setFeedback(null)
     setAnswer('')
@@ -328,7 +328,7 @@ function SoloGame({ onBack, onNavigate, difficulty }: SoloGameProps) {
     const points = calculatePoints(answerType, nextStreak, questionStartedAt)
 
     setStreak(nextStreak)
-    setMaxStreak((currentMax) => Math.max(currentMax, nextStreak))
+    setBestStreak((currentBest) => Math.max(currentBest, nextStreak))
     setScore((currentScore) => currentScore + points)
     setCorrectGuesses((currentCorrectGuesses) => currentCorrectGuesses + 1)
     setTotalGuesses((currentTotalGuesses) => currentTotalGuesses + 1)
